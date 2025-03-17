@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATTENDANCE CHECKER</title>
+    <link rel="stylesheet" href="../static/css/w3.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #03a9f4; 
+            color: white;
+            padding: 8px 15px;
+        }
+        .table-container {
+            margin-top: 15px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f1f1f1;
+        }
+        #qr-reader {
+            width: 100%;
+            height: 400px;
+        }
+        .modal-content {
+            padding: 20px;
+        }
+        .details {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h3><b>ATTENDANCE CHECKER</b></h3>
+        <div class="nav">
+            <a href="{{ url_for('view_attendance') }}" class="w3-button w3-amber">VIEW ATTENDANCE</a>
+            <a href="{{ url_for('add_student_page') }}" class="w3-button w3-green">+ADD</a>
+            <a href="{{ url_for('logout') }}" class="w3-button w3-red">LOGOUT</a>
+        </div>
+    </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>IDNO</th>
+                        <th>LASTNAME</th>
+                        <th>FIRSTNAME</th>
+                        <th>COURSE</th>
+                        <th>LEVEL</th>
+                        <th>TIME LOGGED</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table">
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.idno }}</td>
+                        <td>{{ student.lastname }}</td>
+                        <td>{{ student.firstname }}</td>
+                        <td>{{ student.course }}</td>
+                        <td>{{ student.level }}</td>
+                        <td>{{ student.time_logged }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">No attendance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="w3-center">
+            <hr/>
+            &copy; copyright 2024 Larie Jane Rubi and Shekainah P. Gaceta
+        </div>
+    </div>
+
+<script>
+    let qrCodeScanner; 
+
+    function openQRModal() {
+        document.getElementById('qrModal').style.display = 'block';
+        
+        if (!qrCodeScanner) {
+            qrCodeScanner = new Html5Qrcode("qr_camera");
+        }
+        
+        qrCodeScanner.start(
+            { facingMode: "user" }, 
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }, 
+            },
+            (decodedText, decodedResult) => {
+                document.getElementById('qr_result').style.display = 'block';
+                document.getElementById('qr_data').innerText = decodedText;
+
+                // Log attendance
+                fetch(`/log_attendance/${decodedText}`, {
+                    method: 'POST',
+                }).then(response => {
+                    if (response.ok) {
+                        alert("Attendance logged successfully");
+                    }
+                });
+
+                qrCodeScanner.stop();
+                closeQRModal();
+            },
+            (errorMessage) => { }
+        );
+    }
+
+    function closeQRModal() {
+        document.getElementById('qrModal').style.display = 'none';
+        if (qrCodeScanner) {
+            qrCodeScanner.stop();
+        }
+    }
+</script>
+</body>
+</html>

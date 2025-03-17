@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie-edge">
+    <link rel="stylesheet" href="../static/css/w3.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>Person List</title>
+    <style>
+        body {
+            background-color: white;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #03a9f4;
+            color: white;
+            padding: 8px 15px;
+        }
+
+        .content {
+            flex: 1; /* Pushes the footer to the bottom */
+            display: flex; /* Enables flexbox */
+            align-items: center; /* Centers vertically */
+            justify-content: center; /* Centers horizontally */
+        }
+
+        .scanner {
+            border-style: solid;
+            width: 800px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-color: #ccc;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+		
+		.scanner {
+			height: 500px;
+			width: 500px;
+		}
+		
+		.modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+		
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h3><b>STUDENT LIST</b></h3>
+    </div>
+
+    <div class="content">
+        <div class="scanner" id="scanner">
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2024 Larie Jane Rubi and Shekainah P. Gaceta
+    </div>
+	
+	<!-- Modal for displaying scanned details -->
+    <div id="studentModal" class="w3-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Student Details</h2>
+
+			<img id="student-photo" src="" alt="Student Photo" style="max-width: 100%; display: none; border: 1px solid #ccc; margin-top: 10px;">
+            <p><strong>IDNO:</strong> <span id="student-idno"></span></p>
+            <p><strong>LAST NAME:</strong> <span id="student-lastname"></span></p>
+            <p><strong>FIRST NAME:</strong> <span id="student-firstname"></span></p>
+            <p><strong>COURSE:</strong> <span id="student-course"></span></p>
+            <p><strong>LEVEL:</strong> <span id="student-level"></span></p>
+			<!-- <p>
+				<button id="next" onclick="next()" >Next</button>
+			</p> -->
+            <hr/>
+            &copy; copyright 2024 Larie Jane Rubi and Shekainah P. Gaceta
+        </div>
+
+    </div>
+
+    <script>
+		// function next(){
+		// 	window.location.href = '/'
+		// }
+
+       function scanQR() {
+			var html5QrCode = new Html5Qrcode("scanner");
+			html5QrCode.start(
+					{ facingMode: "environment" },
+					{ fps: 10, qrbox: { width: 300, height: 300 } },
+					(decodedText) => {
+						console.log(`Decoded text: ${decodedText}`);
+						fetch(`/get_student_details/${decodedText}`)
+							.then((response) => response.json())
+							.then((data) => {
+								if (data.error) {
+									alert("Student not found");
+								} else {
+									showStudentDetails(data); // Display student details in the modal
+									logAttendance(data.idno); // Log attendance
+								}
+							})
+							.catch((error) => console.error("Error fetching student details:", error));
+					},
+					(errorMessage) => {
+						console.warn(`QR Code scan error: ${errorMessage}`);
+					}
+				)
+				.catch((error) => {
+					console.error("Unable to start QR scanner:", error);
+				});
+		}
+
+			
+			function fetchStudentDetails(idno) {
+				fetch(`/get_student_details/${idno}`)
+					.then(response => {
+						if (!response.ok) throw new Error("Student not found");
+						return response.json();
+					})
+					.then(data => {
+						document.getElementById('student-idno').textContent = data.idno;
+						document.getElementById('student-lastname').textContent = data.lastname;
+						document.getElementById('student-firstname').textContent = data.firstname;
+						document.getElementById('student-course').textContent = data.course;
+						document.getElementById('student-level').textContent = data.level;
+						
+						const photoElement = document.getElementById('student-photo');
+						if (data.photo) {
+							photoElement.src = data.photo;  // Use the file path returned by the server
+							photoElement.style.display = "block";  // Show the photo
+						} else {
+							photoElement.style.display = "none";  // Hide the photo if not available
+						}
+
+						document.getElementById('studentModal').style.display = "block";
+					})
+					.catch(error => {
+						console.error("Error fetching student details:", error);
+						alert("Error: " + error.message);
+					});
+			}
+
+		
+				function logAttendance(idno) {
+					fetch(`/log_attendance/${idno}`, {
+						method: "POST",
+					})
+						.then((response) => {
+							if (response.ok) {
+							} else {
+								alert("Error logging attendance.");
+							}
+						})
+						.catch((error) => console.error("Error logging attendance:", error));
+				}
+
+			function showStudentDetails(data) {
+
+				document.getElementById('student-idno').textContent = data.idno;
+				document.getElementById('student-lastname').textContent = data.lastname;
+				document.getElementById('student-firstname').textContent = data.firstname;
+				document.getElementById('student-course').textContent = data.course;
+				document.getElementById('student-level').textContent = data.level;
+
+				// Display the photo
+				const photoElement = document.getElementById('student-photo');
+				if (data.photo) {
+					photoElement.src = data.photo;
+					photoElement.style.display = "block"; // Ensure the photo is visible
+				} else {
+					photoElement.style.display = "none"; // Hide if no photo is provided
+				}
+
+				document.getElementById('studentModal').style.display = "block"; // Show the modal
+			}
+	
+			function closeModal() {
+				document.getElementById('studentModal').style.display = "none";
+			}
+
+			document.addEventListener("DOMContentLoaded", () => {
+				scanQR();
+			});
+		
+    </script>
+</body>
+</html>

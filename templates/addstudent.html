@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student</title>
+    <link rel="stylesheet" href="../static/css/w3.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+</head>
+ <style>
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #03a9f4; 
+            color: white;
+            padding: 8px 15px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 15px;
+        }
+</style>
+<body>
+  <div class="navbar">
+        <h3><b>STUDENT</b></h3>
+        <div class="nav">
+            <a href="{{ url_for('view_attendance') }}" class="w3-button w3-amber">VIEW ATTENDANCE</a>
+            <a href="{{ url_for('add_student_page') }}" class="w3-button w3-green">+ADD</a>
+            <a href="{{ url_for('logout') }}" class="w3-button w3-red">LOGOUT</a>
+        </div>
+    </div>
+
+    <div class="w3-row-padding">
+        <div class="w3-half w3-border-right">
+            <h3><b>Add Student</b></h3>
+				<form id="addStudentForm" method="POST" action="{{ url_for('add_student_page') }}">
+                <div id="camera" style="width: 320px; height: 240px; margin-bottom: 10px;"></div>
+                <button type="button" class="w3-button w3-blue" onclick="takeSnapshot()">SNAP</button>
+
+                <input type="hidden" name="photo" id="photo">
+
+                <p>
+                    <label>IDNO</label>
+                    <input type="text" id="idno" name="idno" class="w3-input w3-border" placeholder="Enter IDNO" required>
+                </p>
+                <p>
+                    <label>LASTNAME</label>
+                    <input type="text" id="lastname" name="lastname" class="w3-input w3-border" placeholder="Enter Last Name" required>
+                </p>
+                <p>
+                    <label>FIRSTNAME</label>
+                    <input type="text" id="firstname" name="firstname" class="w3-input w3-border" placeholder="Enter First Name" required>
+                </p>
+                <p>
+                    <label>COURSE</label>
+                    <select id="course" name="course" class="w3-select w3-border" required>
+                        <option value="" disabled selected>Select Course</option>
+                        <option value="BSIT">Bachelor of Science in Information Technology</option>
+                        <option value="BSCS">Bachelor of Science in Computer Science</option>
+                        <option value="BSN">Bachelor of Science in Nursing</option>
+                        <option value="BSMAR-E">Bachelor of Science in Marine Engineering</option>
+                        <option value="BST">Bachelor of Science in Tourism</option>
+                        <option value="BSED">Bachelor of Science in Education</option>
+                        <option value="BSCJ">Bachelor of Science in Criminal Justice</option>
+                    </select>
+                </p>
+                <p>
+                    <label>LEVEL</label>
+                    <select id="level" name="level" class="w3-select w3-border" required>
+                        <option value="" disabled selected>Select Level</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                    </select>
+                </p>
+            </form>
+        </div>
+
+        <div class="w3-half">
+            <h3><b>Student Details</b></h3>
+				<div class="w3-row" style="display: flex; align-items: center; justify-content: space-evenly; margin-bottom: 20px;">
+					<div>
+						<b>Captured Image:</b>
+						<div id="capturedImage" style="border: 1px solid #ccc; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; overflow: wrap;">
+						</div>
+					</div>
+					<div>
+						<b>QR Code:</b>
+						<div id="qrcode" style="border: 1px solid #ccc; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; overflow: wrap;">
+						</div>
+					</div>
+				</div>
+
+            <p><b>IDNO:</b> <span id="view_idno"></span></p>
+            <p><b>LASTNAME:</b> <span id="view_lastname"></span></p>
+            <p><b>FIRSTNAME:</b> <span id="view_firstname"></span></p>
+            <p><b>COURSE:</b> <span id="view_course"></span></p>
+            <p><b>LEVEL:</b> <span id="view_level"></span></p>
+
+            <button type="submit" form="addStudentForm" class="w3-button w3-green">SAVE</button>
+            <a href="{{ url_for('index') }}" class="w3-button w3-red">CANCEL</a>
+        </div>
+    </div>
+	<div class="w3-center">
+		<hr/>
+		&copy; copyright 2024 Larie Jane Rubi and Shekainah P. Gaceta
+	</div>
+</div>
+
+<script>
+    Webcam.set({
+        width: 320,
+        height: 240,
+        image_format: 'jpeg',
+        jpeg_quality: 90
+    });
+    Webcam.attach('#camera');
+	
+    function takeSnapshot() {
+        Webcam.snap(function(data_uri) {
+            document.getElementById('photo').value = data_uri;
+			
+            document.getElementById('capturedImage').innerHTML = `<img src="${data_uri}" width="120" />`;
+
+            const idno = document.getElementById('idno').value;
+
+            if (idno.trim() === "") {
+                alert("Please enter IDNO to generate QR code!");
+                return;
+            }
+
+            fetch('/generate_qrcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idno })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('qrcode').innerHTML = `<img src="data:image/png;base64,${data.qrcode}" />`;
+            });
+
+            document.getElementById('view_idno').textContent = idno;
+            document.getElementById('view_lastname').textContent = document.getElementById('lastname').value;
+            document.getElementById('view_firstname').textContent = document.getElementById('firstname').value;
+            document.getElementById('view_course').textContent = document.getElementById('course').value;
+            document.getElementById('view_level').textContent = document.getElementById('level').value;
+        });
+    }
+</script>
+</body>
+</html>
